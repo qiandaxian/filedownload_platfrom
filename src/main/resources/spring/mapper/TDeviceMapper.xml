@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cictec.middleware.tsinghua.dao.TDeviceMapper">
+  <resultMap id="BaseResultMap" type="com.cictec.middleware.tsinghua.entity.po.TDevice">
+    <!--
+      WARNING - @mbg.generated
+    -->
+    <id column="dev_uuid" jdbcType="VARCHAR" property="devUuid" />
+    <result column="dev_code" jdbcType="VARCHAR" property="devCode" />
+    <result column="dev_model_num" jdbcType="VARCHAR" property="devModelNum" />
+    <result column="dev_version" jdbcType="VARCHAR" property="devVersion" />
+    <result column="dev_plate_number" jdbcType="VARCHAR" property="devPlateNumber" />
+    <result column="dev_sim_num" jdbcType="VARCHAR" property="devSimNum" />
+    <result column="dev_online_status" jdbcType="VARCHAR" property="devOnlineStatus" />
+    <result column="dev_status" jdbcType="VARCHAR" property="devStatus" />
+    <result column="dev_isvalid" jdbcType="VARCHAR" property="devIsvalid" />
+    <result column="dev_phone" jdbcType="VARCHAR" property="devPhone" />
+    <result column="dev_ref_id" jdbcType="VARCHAR" property="devRefId" />
+    <result column="dev_status_change_time" jdbcType="TIMESTAMP" property="devStatusChangeTime" />
+    <result column="dev_create_user" jdbcType="VARCHAR" property="devCreateUser" />
+    <result column="dev_create_time" jdbcType="TIMESTAMP" property="devCreateTime" />
+    <result column="dev_update_user" jdbcType="VARCHAR" property="devUpdateUser" />
+    <result column="dev_update_time" jdbcType="TIMESTAMP" property="devUpdateTime" />
+    <result column="dev_drop_flag" jdbcType="VARCHAR" property="devDropFlag" />
+    <result column="dev_remark" jdbcType="VARCHAR" property="devRemark" />
+    <result column="dev_code_seq" jdbcType="SMALLINT" property="devCodeSeq" />
+    <result column="dev_flag" jdbcType="SMALLINT" property="devFlag" />
+    <result column="dev_key" jdbcType="VARCHAR" property="devKey" />
+    <result column="master_version" jdbcType="VARCHAR" property="masterVersion" />
+    <result column="cityid" jdbcType="VARCHAR" property="cityid" />
+    <result column="ip" jdbcType="VARCHAR" property="ip" />
+    <result column="port" jdbcType="VARCHAR" property="port" />
+    <result column="protocol" jdbcType="VARCHAR" property="protocol" />
+    <result column="operational_type" jdbcType="VARCHAR" property="operationalType" />
+  </resultMap>
+</mapper>
