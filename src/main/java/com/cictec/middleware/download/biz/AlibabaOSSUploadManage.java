@@ -5,6 +5,7 @@ import java.io.InputStream;
 import java.net.URL;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import com.aliyun.oss.ClientException;
 import com.aliyun.oss.OSSClient;
@@ -16,7 +17,7 @@ import com.aliyun.oss.model.*;
  * @author qiandaxian
  * 阿里云OSS多线程上传
  */
-public class UploadManage {
+public class AlibabaOSSUploadManage {
 
     private static String endpoint = "oss-cn-hangzhou.aliyuncs.com";
     private static String accessKeyId = "LTAIMMZcBdG4YbJU";
@@ -24,7 +25,8 @@ public class UploadManage {
     private static String bucketName = "download-device-platfrom";
 
     private static OSSClient client = null;
-    private static ExecutorService executorService = Executors.newFixedThreadPool(5);
+    private static ExecutorService executorService = null;
+
 
     /**
      * 单例的OSSclient
@@ -35,6 +37,13 @@ public class UploadManage {
             client = new OSSClient(endpoint, accessKeyId, accessKeySecret);
         }
         return client;
+    }
+
+    public static ExecutorService getExecutorService(){
+        if (executorService == null){
+            executorService = new ScheduledThreadPoolExecutor(5);
+        }
+        return executorService;
     }
 
     public static void main(String[] args) throws IOException {
@@ -65,14 +74,16 @@ public class UploadManage {
                 for (int j = 0; j < 6; j++) {
                     String url = urls[j];
                     String key = "test/"+i+"/"+keys[j];
-                    executorService.execute(new UploaderThread(url,key));
+                    getExecutorService().execute(new UploaderThread(url,key));
                     System.out.println("第"+(i+1)*(j+1)+"个线程加入线程池");
                 }
             }
 
             executorService.shutdown();
 
-            while (!executorService.isTerminated()) {
+            while (executorService.isTerminated()) {
+
+
                 try {
                     executorService.awaitTermination(5, TimeUnit.SECONDS);
                 } catch (InterruptedException e) {

@@ -11,17 +11,17 @@ public class HttpDownloadRabbitMqRouter extends RouteBuilder {
     @Autowired
     HttpDownloadRabbitMqProcessor httpDownloadRabbitMqProcessor;
 
-    @Value("${rabbitmq.download.host}")
+    @Value("${rabbitmq.host}")
     private String host;
-    @Value("${rabbitmq.download.port}")
+    @Value("${rabbitmq.port}")
     private String port;
-    @Value("${rabbitmq.download.username}")
+    @Value("${rabbitmq.username}")
     private String username;
-    @Value("${rabbitmq.download.password}")
+    @Value("${rabbitmq.password}")
     private String password;
-    @Value("${rabbitmq.download.exchangename}")
+    @Value("${rabbitmq.receive.exchangename}")
     private String exchangename;
-    @Value("${rabbitmq.download.queuename}")
+    @Value("${rabbitmq.receive.queuename}")
     private String queuename;
 
 
