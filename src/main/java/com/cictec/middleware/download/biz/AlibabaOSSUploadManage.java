@@ -3,142 +3,129 @@ package com.cictec.middleware.download.biz;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
-import com.aliyun.oss.ClientException;
+import java.util.concurrent.*;
+
 import com.aliyun.oss.OSSClient;
-import com.aliyun.oss.OSSException;
 import com.aliyun.oss.model.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
 
 
 /**
  * @author qiandaxian
  * 阿里云OSS多线程上传
  */
+@Component
 public class AlibabaOSSUploadManage {
 
-    private static String endpoint = "oss-cn-hangzhou.aliyuncs.com";
-    private static String accessKeyId = "LTAIMMZcBdG4YbJU";
-    private static String accessKeySecret = "zyDWSfOLHAzpbIzw5i1GZmB4p0POlr";
-    private static String bucketName = "download-device-platfrom";
+    @Value("${media.alibaba.endpoint}")
+    private String endpoint = "oss-cn-hangzhou.aliyuncs.com";
+    @Value("${media.alibaba.access-id}")
+    private String accessKeyId = "LTAIMMZcBdG4YbJU";
+    @Value("${media.alibaba.access-key}")
+    private String accessKeySecret = "zyDWSfOLHAzpbIzw5i1GZmB4p0POlr";
+    @Value("${media.alibaba.bucket-name}")
+    private String bucketName = "tsinghua-device-platfrom";
 
     private static OSSClient client = null;
     private static ExecutorService executorService = null;
+    //采用阻塞的数组队列，去控制mq的消费速度，当队列满时，不在消费mq中得消息，方便后期拓展。
+    private BlockingQueue<Future<String>> blockingQueue = new ArrayBlockingQueue<Future<String>>(5);
 
+    Logger logger = LoggerFactory.getLogger(AlibabaOSSUploadManage.class);
 
     /**
      * 单例的OSSclient
      * @return
      */
-    public static OSSClient getClient(){
+    public OSSClient getClient(){
         if(client == null){
             client = new OSSClient(endpoint, accessKeyId, accessKeySecret);
         }
         return client;
     }
 
-    public static ExecutorService getExecutorService(){
+    public ExecutorService getExecutorService(){
         if (executorService == null){
             executorService = new ScheduledThreadPoolExecutor(5);
         }
         return executorService;
     }
 
-    public static void main(String[] args) throws IOException {
+    public void downloadFile(String url,String key,String mediaUUid){
+        Future<String> future =  getExecutorService().submit(new UploaderThread(url,key,mediaUUid));
+//        try {
+//            String s  = future.get();
+//            logger.error("线程执行完毕，返回：{}",s);
 
-        //模拟多文件同时上传
-        try {
-
-            String[] urls = {
-                    "http://117.34.118.23:9004/upload/2018/01/05/20180105014850265.mp4",
-                    "http://117.34.118.23:9004/upload/2018/01/05/20180105014818434.mp4",
-                    "http://117.34.118.23:9003/mediaplayer/upload/default/2018/01/05/20180105020441693.jpg",
-                    "http://117.34.118.23:9003/mediaplayer/upload/default/2018/01/05/20180105020432442.jpg",
-                    "http://117.34.118.23:9004/upload/2018/01/05/20180105015033277.jpg",
-                    "http://117.34.118.23:9004/upload/2018/01/03/20180103032228273.png"
-
-            };
-
-            String[] keys = {
-                    "20180105014850265.mp4",
-                    "20180105014818434.mp4",
-                    "20180105020441693.jpg",
-                    "20180105020432442.jpg",
-                    "20180105015033277.jpg",
-                    "20180103032228273.png"
-            };
-
-            for (int i = 0; i < 100; i++) {
-                for (int j = 0; j < 6; j++) {
-                    String url = urls[j];
-                    String key = "test/"+i+"/"+keys[j];
-                    getExecutorService().execute(new UploaderThread(url,key));
-                    System.out.println("第"+(i+1)*(j+1)+"个线程加入线程池");
-                }
-            }
-
-            executorService.shutdown();
-
-            while (executorService.isTerminated()) {
-
-
-                try {
-                    executorService.awaitTermination(5, TimeUnit.SECONDS);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-            }
-
-
-        } catch (OSSException oe) {
-            System.out.println("Caught an OSSException, which means your request made it to OSS, "
-                    + "but was rejected with an error response for some reason.");
-            System.out.println("Error Message: " + oe.getErrorCode());
-            System.out.println("Error Code:       " + oe.getErrorCode());
-            System.out.println("Request ID:      " + oe.getRequestId());
-            System.out.println("Host ID:           " + oe.getHostId());
-        } catch (ClientException ce) {
-            System.out.println("Caught an ClientException, which means the client encountered "
-                    + "a serious internal problem while trying to communicate with OSS, "
-                    + "such as not being able to access the network.");
-            System.out.println("Error Message: " + ce.getMessage());
-        } finally {
-            /*
-             * Do not forget to shut down the client finally to release all allocated resources.
-             */
-            if (client != null) {
-                client.shutdown();
-            }
-        }
+//        } catch (InterruptedException e) {
+//            e.printStackTrace();
+//        } catch (ExecutionException e) {
+//            e.printStackTrace();
+//        }
     }
 
-    private static class UploaderThread  implements Runnable {
+
+    private class UploaderThread  implements Callable<String> {
+
 
         private String url;
         private String key;
+        private String mediaUuid;
 
-        public UploaderThread(String url, String key) {
+        public UploaderThread(String url, String key ,String mediaUuid) {
             this.url = url;
             this.key = key;
+            this.mediaUuid = mediaUuid;
         }
 
+//        @Override
+//        public void run() {
+//            InputStream instream = null;
+//            try {
+//
+//                logger.info("开始执行上传任务:"+key);
+//
+//                InputStream inputStream = new URL(url).openStream();
+//
+//
+//                PutObjectResult result = getClient().putObject(bucketName, key, inputStream);
+//
+//                logger.info(key+"上传完毕！");
+//
+//                logger.info(result.toString());
+//
+//            } catch (Exception e) {
+//                e.printStackTrace();
+//            } finally {
+//                if (instream != null) {
+//                    try {
+//                        instream.close();
+//                    } catch (IOException e) {
+//                        e.printStackTrace();
+//                    }
+//                }
+//            }
+//        }
+
         @Override
-        public void run() {
+        public String call() throws Exception {
             InputStream instream = null;
             try {
 
-                System.out.println("开始执行上传任务:"+key);
+                logger.info("开始执行上传任务:"+key);
 
                 InputStream inputStream = new URL(url).openStream();
 
 
                 PutObjectResult result = getClient().putObject(bucketName, key, inputStream);
 
-                System.out.println(key+"上传完毕！");
+                logger.info(key+"上传完毕！");
 
-                System.out.println(result.toString());
+                logger.info(result.toString());
+
 
             } catch (Exception e) {
                 e.printStackTrace();
@@ -151,6 +138,8 @@ public class AlibabaOSSUploadManage {
                     }
                 }
             }
+
+            return key+"上传完毕！uuid:"+mediaUuid;
         }
     }
 }
